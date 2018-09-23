@@ -1,5 +1,6 @@
 library(tidyverse)
 library(lubridate)
+library(plotly)
 a <- read_csv("BONDS.csv")
 b <- a %>% mutate(Size_Mio=parse_double(`Issued Amount`)/1000000, 
                   Maturity = parse_date(Maturity, "%d/%m/%Y")) %>% 
@@ -28,3 +29,40 @@ chart2 <- c %>% ggplot(aes(Year,Size_Mio)) +
   theme(axis.text.x  = element_text(angle=90)) +
   scale_x_continuous(breaks = pretty(c$Year, n = 20)) +
   theme(legend.position = c(0.92, 0.8)) 
+
+chart3 <- c %>% ggplot(aes(Maturity,Yield,color=Ticker)) +
+  geom_point(aes(size=Size_Mio), alpha=0.5) +
+  geom_rug() +
+  stat_smooth(geom='line', alpha=0.5, se=FALSE) +
+  scale_x_date(date_breaks = "4 year", date_labels = "%Y") + 
+  scale_y_continuous(breaks=round(seq(min(c$Yield),max(c$Yield),by=0.2),1)) + 
+  labs(title = "Malaysian Govies Bonds",
+       subtitle = "Maturities vs Yield",
+       caption = "Source: Bloomberg") + 
+  theme_bw() +
+  theme(legend.position = c(0.9, 0.4)) 
+
+p1 <- ggplotly(chart1) %>% 
+    layout(legend = list(x = 0.6, y = 0.4), 
+      title = "Malaysian Govies Bonds",
+      xaxis = list(title = "Maturity"),
+      yaxis = list(title = "Traded Yield"))
+p1$x$data[[2]]$text <- paste('Maturity Date: ', c$Maturity,
+                               '<br> Traded Yield: ', c$Yield,
+                               '<br> Issuance Size in millions: ', c$Size_Mio,
+                               '<br> Type: ', c$Ticker)
+p1$x$data[[1]]$text <- paste('Maturity Date: ', c$Maturity,
+                               '<br> Traded Yield: ', c$Yield,
+                               '<br> Issuance Size in millions: ', c$Size_Mio,
+                               '<br> Type: ', c$Ticker)
+
+p <- plot_ly(c, x = ~Maturity, y = ~Yield, type = 'scatter', size = ~Size_Mio, color =~Ticker,
+              hoverinfo = 'text',
+              text = ~paste('Maturity Date: ', Maturity,
+                            '<br> Issuance Size: ', Size_Mio,
+                            '<br> Type: ', Ticker)) %>%
+             layout(legend = list(x = 0.6, y = 0.4), 
+                    title = "Malaysian Govies Bonds",
+                    xaxis = list(title = "Maturity"),
+                    yaxis = list(title = "Traded Yield"))
+
